@@ -35,7 +35,7 @@ function send(m) {
   sendChunk(message, 0);
 }
 
-function sendChunk(message, i) {
+async function sendChunk(message, i) {
   if (i < message.length) {
     var rest = message.length - i;
     var chunk = rest < fragment ? rest : fragment;
@@ -71,8 +71,9 @@ function sendChunk(message, i) {
           console.log('Could not send ' + message + ': ' + e);
         });
     } else if (usbDevice) {
-      console.log('Trying to send to USB');
-      // TODO
+      console.log('Trying to send to USB', data);
+      const res = await usbDevice.transferOut(2, data);
+      console.log(res);
     }
   } else {
     console.log('Sent it');
@@ -236,7 +237,7 @@ async function discoverSerial() {
     }
   } else {
     // Prompt user to select any serial port.
-    port = await navigator.serial.requestPort([{ usbVendorId: 0x0403 }]);
+    port = await navigator.serial.requestPort([]);
     await port.open({ baudRate: 38400 });
     if (port.readable) {
       const reader = port.readable.getReader();
@@ -282,11 +283,12 @@ async function discoverUsb() {
   if (!device) return;
 
   await device.open();
-  if (device.configuration === null) await device.selectConfiguration(1);
+  await device.selectConfiguration(1);
+  await device.claimInterface(0);
 
   console.log(device, 'opened');
 
-  usbDevice = device;
+  usbDevice = window.u = device;
 }
 
 function readall() {
